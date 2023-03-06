@@ -447,6 +447,24 @@ async function deployIdentityManager(plan, config) {
     });
 }
 
+async function transferIdentityManagerOwnership(config) {
+    const contract = new Contract(
+        "0x9D439D9504bF9f81CC0A8Bfe4Ce526e2DACD2F73",
+        IdentityManagerImpl.abi,
+        config.wallet
+    );
+
+    const target = process.env.TARGET_ADDRESS;
+    if (!target) {
+        console.log("Provide target owner address via TARGET_ADDRESS environment variable");
+        return;
+    }
+    
+    await contract.transferOwnership(target);
+    
+    console.log("done");
+}
+
 async function getPrivateKey(config) {
     if (!config.privateKey) {
         config.privateKey = process.env.PRIVATE_KEY;
@@ -802,6 +820,18 @@ async function buildUpgradeActionPlan(plan, config) {
     await deployUpgrade(plan, config);
 }
 
+async function buildTransferActionPlan(plan, config) {
+    dotenv.config();
+
+    await getPrivateKey(config);
+    await getRpcUrl(config);
+    await getProvider(config);
+    await getWallet(config);
+
+    await transferIdentityManagerOwnership(config);
+}
+
+
 /** Builds a plan using the provided function and then executes the plan.
  *
  * @param {(plan: Object, config: Object) => Promise<void>} planner The function that performs the
@@ -846,6 +876,16 @@ async function main() {
             const options = program.opts();
             let config = await loadConfiguration(options.config);
             await buildAndRunPlan(buildUpgradeActionPlan, config);
+            await saveConfiguration(config);
+        });
+
+    program
+        .command('transfer')
+        .description('Move WorldID identity manager contract ownership.')
+        .action(async () => {
+            const options = program.opts();
+            let config = await loadConfiguration(options.config);
+            await buildAndRunPlan(buildTransferActionPlan, config);
             await saveConfiguration(config);
         });
 
