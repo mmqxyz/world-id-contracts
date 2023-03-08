@@ -442,21 +442,41 @@ async function deployIdentityManager(plan, config) {
 }
 
 async function transferIdentityManagerOwnership(config) {
+  if (!config.identityManagerContractAddress) {
+    config.identityManagerContractAddress = process.env.IDENTITY_MANAGER_ADDRESS;
+  }
+
+  if (!config.identityManagerContractAddress) {
+    config.identityManagerContractAddress = await ask(`Enter WorldID Identity Manager address: `);
+  }
+
+  if (!config.identityManagerContractAddress) {
+    console.log("Provide WorldID Identity Manager address to continue.");
+    return;
+  }
+
+  if (!config.targetWalletAddress) {
+    config.targetWalletAddress = process.env.TARGET_WALLET_ADDRESS;
+  }
+
+  if (!config.targetWalletAddress) {
+    config.targetWalletAddress = await ask(`Enter target wallet address to which transfer ownership: `);
+  }
+
+  if (!config.targetWalletAddress) {
+    console.log("Provide target owner address to continue.");
+    return;
+  }
+
   const contract = new Contract(
-    "0x9D439D9504bF9f81CC0A8Bfe4Ce526e2DACD2F73",
+    config.identityManagerContractAddress,
     IdentityManagerImpl.abi,
     config.wallet
   );
 
-  const target = process.env.TARGET_ADDRESS;
-  if (!target) {
-    console.log("Provide target owner address via TARGET_ADDRESS environment variable");
-    return;
-  }
+  await contract.transferOwnership(config.targetWalletAddress);
 
-  await contract.transferOwnership(target);
-
-  console.log("done");
+  console.log("Done");
 }
 
 async function getPrivateKey(config) {
