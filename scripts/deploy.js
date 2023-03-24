@@ -760,10 +760,21 @@ async function deployIdentityManager(plan, config, insertLUTTargetField, updateL
     // pretend that the proxy doesn't exist and yet still call through it.
     const contractWithAbi = new Contract(contract.address, IdentityManagerImpl.abi, config.wallet);
     const latestRoot = await contractWithAbi.latestRoot();
-    if (latestRoot instanceof BigNumber && latestRoot._hex === config.initialRoot) {
-      // If we get the root back we know it's succeeded as if it isn't called through the
-      // proxy this call will revert.
-      spinner.succeed(`Deployed WorldID Identity Manager to ${contract.address}`);
+    console.log(latestRoot._hex);
+    console.log(config.initialRoot);
+    if (latestRoot instanceof BigNumber) {
+      const stripRegex = /^0x0*/g;
+      const strippedLatestRoot = latestRoot._hex.replace(stripRegex, '');
+      const strippedReturnedRoot = config.initialRoot.replace(stripRegex, '');
+      if (strippedReturnedRoot === strippedLatestRoot) {
+        // If we get the root back we know it's succeeded as if it isn't called through the
+        // proxy this call will revert.
+        spinner.succeed(`Deployed WorldID Identity Manager to ${contract.address}`);
+      } else {
+        spinner.fail(
+          `WorldID Identity Manager deployed at ${contract.address} but the initial root does not match.`
+        );
+      }
     } else {
       spinner.fail(
         `Could not communicate with the WorldID Identity Manager at ${contract.address}`
